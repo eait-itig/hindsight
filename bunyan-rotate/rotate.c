@@ -89,7 +89,7 @@ main(int argc, char *argv[])
 	unsigned char buf[BUFSIZE];
 	ssize_t len;
 
-	while ((ch = getopt(argc, argv, "Fl:MNs:Tz")) != -1) {
+	while ((ch = getopt(argc, argv, "Fl:Ms:Tz")) != -1) {
 		switch (ch) {
 		case 'F':
 			format = 0;
