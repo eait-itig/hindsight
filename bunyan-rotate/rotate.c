@@ -22,6 +22,7 @@
 #include <time.h>
 #include <err.h>
 #include <util.h>
+#include <vis.h>
 
 #include <sys/stat.h>
 
@@ -232,6 +233,7 @@ main(int argc, char *argv[])
 	if (meta) {
 		unsigned char md5sum[MD5_DIGEST_LENGTH];
 		unsigned char sha256sum[SHA256_DIGEST_LENGTH];
+		char dst[8];
 		char *mfile;
 		FILE *mf;
 		size_t i;
@@ -250,17 +252,25 @@ main(int argc, char *argv[])
 		if (mf == NULL)
 			err(1, "%s", mfile);
 
-		fprintf(mf, "ifile=%s\n" "len=%llu\n", ifile, iflen);
+		fprintf(mf, "{\"filename\":\"");
+		for (i = 0; ifile[i] != '\0'; i++) {
+			vis(dst, ifile[i],
+			    VIS_TAB | VIS_NL | VIS_DQ | VIS_CSTYLE, 0);
+			fprintf(mf, "%s", dst);
+		}
+		fprintf(mf, "\",");
 
-		fprintf(mf, "md5=");
+		fprintf(mf, "\"length\":%llu,", (unsigned long long)iflen);
+
+		fprintf(mf, "\"md5\":\"");
 		for (i = 0; i < sizeof(md5sum); i++)
 			fprintf(mf, "%02x", md5sum[i]);
-		fprintf(mf, "\n");
+		fprintf(mf, "\",");
 
-		fprintf(mf, "sha256=");
+		fprintf(mf, "\"sha256\":\"");
 		for (i = 0; i < sizeof(sha256sum); i++)
 			fprintf(mf, "%02x", sha256sum[i]);
-		fprintf(mf, "\n");
+		fprintf(mf, "\"}\n");
 
 		fclose(mf);
 		free(mfile);
