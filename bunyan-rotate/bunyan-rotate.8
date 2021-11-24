@@ -85,13 +85,13 @@ Compression level
 provides the best level of compression, but is relatively slow.
 The default is
 .Ar 6 .
-.Fl M
+.It Fl M
 Generate a JSON file containing metadata about the log file input.
 The meta data file is the ouput file name suffixed with .meta.
 The JSON contains the name of the input file, the length of the
 input data in bytes, and the MD5 and SHA256 digests encoded as
 hexadecimal strings.
-.Fl s Ar size
+.It Fl s Ar size
 Only process the input file if it is larger than
 .Ar size
 bytes.
@@ -99,9 +99,9 @@ The size may be specified with a
 B, K, M, G, T, P or E suffix (in either upper or lower case) for
 Byte, Kilobyte, Megabyte, Gigabyte, Terabyte, Petabyte, Exabyte
 (computed using powers of two, i.e., Megabyte = 1024*1024).
-.Fl T
+.It Fl T
 Do not truncate the input log file.
-.Fl z
+.It Fl z
 Compress the log data in the output file.
 .El
 .Sh SEE ALSO
