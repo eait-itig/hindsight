@@ -5,8 +5,8 @@ MAN=
 CFLAGS+=-Wall -Werror
 DEBUG=-g
 
-DPADD=	${LIBZ} ${LIBUTIL}
-LDADD=	-lz -lutil
+DPADD=	${LIBZ} ${LIBUTIL} ${LIBCRYPTO}
+LDADD=	-lz -lutil -lcrypto
 
 BINDIR=/opt/local/bin
 

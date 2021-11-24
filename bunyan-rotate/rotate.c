@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 
 #include <zlib.h>
+#include <openssl/md5.h>
 
 #define BUFSIZE	65536
 
@@ -74,6 +75,10 @@ main(int argc, char *argv[])
 	int trunc = O_RDWR;
 	int level = Z_NO_COMPRESSION;
 	const struct ofile *ofop = &fd_ofile;
+	int meta = 0;
+
+	MD5_CTX md5c;
+	off_t iflen;
 
 	const char *ifile, *ofile;
 	char ofmt[FILENAME_MAX];
@@ -82,7 +87,7 @@ main(int argc, char *argv[])
 	unsigned char buf[BUFSIZE];
 	ssize_t len;
 
-	while ((ch = getopt(argc, argv, "Fl:Ns:Tz")) != -1) {
+	while ((ch = getopt(argc, argv, "Fl:MNs:Tz")) != -1) {
 		switch (ch) {
 		case 'F':
 			format = 0;
@@ -96,6 +101,9 @@ main(int argc, char *argv[])
 			}
 
 			ofop = &gz_ofile;
+			break;
+		case 'M':
+			meta = 1;
 			break;
 		case 's':
 			if (scan_scaled(optarg, &size) == -1)
@@ -163,6 +171,12 @@ main(int argc, char *argv[])
 		}
 	}
 
+	if (meta) {
+		iflen = 0;
+		if (MD5_Init(&md5c) == 0)
+			errx(1, "MD5 Init failed");
+	}
+
 	ofd = open(ofile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
 	if (ofd == -1)
 		err(1, "\"%s\" open", ofile);
@@ -198,9 +212,42 @@ main(int argc, char *argv[])
 				break;
 		}
 
+		if (meta) {
+			iflen += len;
+			if (MD5_Update(&md5c, buf, len) == 0)
+				errx(1, "MD5 Update failed");
+		}
+
 		len = ofop->of_write(of, buf, len);
 		if (len == -1)
 			errx(1, "\"%s\" write", ofile);
+	}
+
+	if (meta) {
+		unsigned char md5sum[MD5_DIGEST_LENGTH];
+		char *mfile;
+		FILE *mf;
+		size_t i;
+		int rv;
+
+		if (MD5_Final(md5sum, &md5c) == 0)
+			errx(1, "MD5 Final failed");
+
+		rv = asprintf(&mfile, "%s.meta", ofile);
+		if (rv == -1)
+			errx(1, "%s meta file name", ofile);
+
+		mf = fopen(mfile, "w");
+		if (mf == NULL)
+			err(1, "%s", mfile);
+
+		fprintf(mf, "ifile=%s\n" "len=%llu\n" "md5=", ifile, iflen);
+		for (i = 0; i < sizeof(md5sum); i++)
+			fprintf(mf, "%02x", md5sum[i]);
+		fprintf(mf, "\n");
+
+		fclose(mf);
+		free(mfile);
 	}
 
 	return (0);
