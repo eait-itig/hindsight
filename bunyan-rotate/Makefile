@@ -1,6 +1,6 @@
 PROG=	bunyan-rotate
 SRCS=	rotate.c
-MAN=
+MAN=	bunyan-rotate.8
 
 CFLAGS+=-Wall -Werror
 DEBUG=-g

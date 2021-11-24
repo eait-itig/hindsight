@@ -1,0 +1,108 @@
+.\"
+.\" Copyright (c) 2021 The University of Queensland
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt BUNYAN-ROTATE 8
+.Os
+.Sh NAME
+.Nm bunyan-rotate
+.Nd rotate (read and maybe truncate) a log file
+.Sh SYNOPSIS
+.Nm
+.Op Fl FMTz
+.Op Fl l Ar level
+.Op Fl s Ar size
+.Ar input
+.Ar filename_format
+.Sh DESCRIPTION
+The
+.Nm
+utility "rotates" the data out of an append only log by opening the
+input file, reading the data out of it into a separate output file,
+and then truncating the input file.
+The log data can optionally be compressed with
+.Xr gzip 1 ,
+and checksummed with the
+MD5 and SHA256
+digest algorithms as it is written to the output file.
+.Pp
+The log file to be rotated is specified with the
+.Ar input
+argument.
+The destination file is specified with the
+.Ar filename_format
+argument.
+By default, the
+.Ar filename_format
+argument is parsed with
+.Xr strftime 3
+so the time at which the output file is created can be embedded in
+the file name.
+This parsing can be disabled with the
+.Fl T
+option.
+.Pp
+Because
+.Nm
+copies the data from the input file to the output file instead of
+using
+.Xr rename 2 ,
+the output file may exist on a separate mountpoint.
+This also allows processes that are appending to the log file to
+continue to do so without having to reopen their log files.
+This is unlike
+.Xr newsyslog 8 ,
+which renames log files, creates new ones, and then notifies the
+processes writing to their log files that they must be reopened.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl F
+Do not process the
+.Ar filename_format
+argument with
+.Xr strftime 3 .
+The ouput filename argument will be used as the output file name directly.
+.It Fl l Ar level
+Specify the compression level used if compressed output is enabled.
+Compression level
+.Ar 1
+is the fastest, but provides a poorer level of compression.
+Compression level
+.Ar 9
+provides the best level of compression, but is relatively slow.
+The default is
+.Ar 6 .
+.Fl M
+Generate a JSON file containing metadata about the log file input.
+The meta data file is the ouput file name suffixed with .meta.
+The JSON contains the name of the input file, the length of the
+input data in bytes, and the MD5 and SHA256 digests encoded as
+hexadecimal strings.
+.Fl s Ar size
+Only process the input file if it is larger than
+.Ar size
+bytes.
+The size may be specified with a
+B, K, M, G, T, P or E suffix (in either upper or lower case) for
+Byte, Kilobyte, Megabyte, Gigabyte, Terabyte, Petabyte, Exabyte
+(computed using powers of two, i.e., Megabyte = 1024*1024).
+.Fl T
+Do not truncate the input log file.
+.Fl z
+Compress the log data in the output file.
+.El
+.Sh SEE ALSO
+.Xr gzip 1
