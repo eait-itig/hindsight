@@ -27,6 +27,7 @@
 
 #include <zlib.h>
 #include <openssl/md5.h>
+#include <openssl/sha.h>
 
 #define BUFSIZE	65536
 
@@ -78,6 +79,7 @@ main(int argc, char *argv[])
 	int meta = 0;
 
 	MD5_CTX md5c;
+	SHA256_CTX sha256c;
 	off_t iflen;
 
 	const char *ifile, *ofile;
@@ -175,6 +177,8 @@ main(int argc, char *argv[])
 		iflen = 0;
 		if (MD5_Init(&md5c) == 0)
 			errx(1, "MD5 Init failed");
+		if (SHA256_Init(&sha256c) == 0)
+			errx(1, "SHA256 Init failed");
 	}
 
 	ofd = open(ofile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
@@ -216,6 +220,8 @@ main(int argc, char *argv[])
 			iflen += len;
 			if (MD5_Update(&md5c, buf, len) == 0)
 				errx(1, "MD5 Update failed");
+			if (SHA256_Update(&sha256c, buf, len) == 0)
+				errx(1, "SHA256 Update failed");
 		}
 
 		len = ofop->of_write(of, buf, len);
@@ -225,6 +231,7 @@ main(int argc, char *argv[])
 
 	if (meta) {
 		unsigned char md5sum[MD5_DIGEST_LENGTH];
+		unsigned char sha256sum[SHA256_DIGEST_LENGTH];
 		char *mfile;
 		FILE *mf;
 		size_t i;
@@ -232,6 +239,8 @@ main(int argc, char *argv[])
 
 		if (MD5_Final(md5sum, &md5c) == 0)
 			errx(1, "MD5 Final failed");
+		if (SHA256_Final(sha256sum, &sha256c) == 0)
+			errx(1, "SHA256 Final failed");
 
 		rv = asprintf(&mfile, "%s.meta", ofile);
 		if (rv == -1)
@@ -241,9 +250,16 @@ main(int argc, char *argv[])
 		if (mf == NULL)
 			err(1, "%s", mfile);
 
-		fprintf(mf, "ifile=%s\n" "len=%llu\n" "md5=", ifile, iflen);
+		fprintf(mf, "ifile=%s\n" "len=%llu\n", ifile, iflen);
+
+		fprintf(mf, "md5=");
 		for (i = 0; i < sizeof(md5sum); i++)
 			fprintf(mf, "%02x", md5sum[i]);
+		fprintf(mf, "\n");
+
+		fprintf(mf, "sha256=");
+		for (i = 0; i < sizeof(sha256sum); i++)
+			fprintf(mf, "%02x", sha256sum[i]);
 		fprintf(mf, "\n");
 
 		fclose(mf);
